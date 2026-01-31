@@ -1,5 +1,5 @@
 -- Load both libraries
-local Liquid = loadstring(game:HttpGet("https://raw.githubusercontent.com/ikyz819/VexaHub/refs/heads/main/FluentUI.lua"))()
+local Liquid = loadstring(game:HttpGet("https://raw.githubusercontent.com/ikyz819/VexaHub/refs/heads/main/FluentRift.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/refs/heads/master/Addons/SaveManager.lua"))()
 
 -- Modify SaveManager to work with Liquid UI
