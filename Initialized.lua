@@ -1,0 +1,256 @@
+-- Load both libraries
+local Liquid = loadstring(game:HttpGet("https://raw.githubusercontent.com/ikyz819/VexaHub/refs/heads/main/FluentRift.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/refs/heads/master/Addons/SaveManager.lua"))()
+
+-- Modify SaveManager to work with Liquid UI
+SaveManager.Parser = {
+    Toggle = {
+        Save = function(idx, object) 
+            return { type = "Toggle", idx = idx, value = object.Value } 
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(data.value)
+            end
+        end,
+    },
+    Slider = {
+        Save = function(idx, object)
+            return { type = "Slider", idx = idx, value = tostring(object.Value) }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(tonumber(data.value))
+            end
+        end,
+    },
+    Textbox = {  -- For Liquid's Textbox
+        Save = function(idx, object)
+            return { type = "Textbox", idx = idx, text = object.Value }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] and type(data.text) == "string" then
+                SaveManager.Options[idx]:SetValue(data.text)
+            end
+        end,
+    },
+    Dropdown = {
+        Save = function(idx, object)
+            return { type = "Dropdown", idx = idx, value = object.Value }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(data.value)
+            end
+        end,
+    },
+    Input = {  -- For Liquid's Input (Keybind)
+        Save = function(idx, object)
+            return { type = "Input", idx = idx, key = tostring(object.Value) }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(Enum.KeyCode[data.key])
+            end
+        end,
+    },
+}
+
+-- Create a compatibility layer for Liquid UI
+local LiquidCompatibility = {
+    Options = {},
+    Notify = function(self, options)
+        -- Use Liquid's notification system
+        Liquid:Notification({
+            Title = options.Title or "Save Manager",
+            Desc = options.SubContent or options.Content,
+            Duration = options.Duration or 5
+        })
+    end
+}
+
+-- Function to register Liquid elements with SaveManager
+function RegisterLiquidOption(element, elementType, idx, callback)
+    LiquidCompatibility.Options[idx] = {
+        Type = elementType,
+        Value = element.Value or false,
+        SetValue = function(self, value)
+            if elementType == "Toggle" then
+                element:SetValue(value)
+            elseif elementType == "Slider" then
+                element:SetValue(value)
+            elseif elementType == "Textbox" then
+                element:SetValue(tostring(value))
+            elseif elementType == "Dropdown" then
+                element:SetValue(value)
+            elseif elementType == "Input" then
+                element:SetValue(value)
+            end
+        end
+    }
+end
+
+-- Add this after loading Liquid and SaveManager
+local function createShortcuts(tab)
+    local shortcuts = {}
+    
+    -- Shortcut for Toggle
+    function shortcuts:Toggle(options)
+        local toggle = tab:Toggle({
+            Title = options.Title,
+            Desc = options.Desc,
+            Value = options.Value or false,
+            Callback = options.Callback or function() end
+        })
+        
+        -- Register with SaveManager if flag exists
+        if options.Flag then
+            RegisterLiquidOption(toggle, "Toggle", options.Flag, function(value)
+                if options.Callback then
+                    options.Callback(toggle, value)
+                end
+            end)
+            
+            -- Set initial value from SaveManager if exists
+            task.spawn(function()
+                local data = LoadConfigData()
+                if data and data[options.Flag] ~= nil then
+                    toggle:SetValue(data[options.Flag])
+                end
+            end)
+        end
+        
+        return toggle
+    end
+    
+    -- Shortcut for Slider
+    function shortcuts:Slider(options)
+        local slider = tab:Slider({
+            Title = options.Title,
+            Min = options.Min or 0,
+            Max = options.Max or 100,
+            Value = options.Value or options.Min or 0,
+            Callback = options.Callback or function() end
+        })
+        
+        if options.Flag then
+            RegisterLiquidOption(slider, "Slider", options.Flag, function(value)
+                if options.Callback then
+                    options.Callback(value)
+                end
+            end)
+            
+            task.spawn(function()
+                local data = LoadConfigData()
+                if data and data[options.Flag] ~= nil then
+                    slider:SetValue(data[options.Flag])
+                end
+            end)
+        end
+        
+        return slider
+    end
+    
+    -- Shortcut for Textbox
+    function shortcuts:Textbox(options)
+        local textbox = tab:Textbox({
+            Title = options.Title,
+            Desc = options.Desc,
+            Value = options.Value or "",
+            PlaceHolder = options.PlaceHolder,
+            Callback = options.Callback or function() end
+        })
+        
+        if options.Flag then
+            RegisterLiquidOption(textbox, "Textbox", options.Flag, function(value)
+                if options.Callback then
+                    options.Callback(textbox, value)
+                end
+            end)
+            
+            task.spawn(function()
+                local data = LoadConfigData()
+                if data and data[options.Flag] ~= nil then
+                    textbox:SetValue(data[options.Flag])
+                end
+            end)
+        end
+        
+        return textbox
+    end
+    
+    -- Shortcut for Button
+    function shortcuts:Button(options)
+        return tab:Button({
+            Title = options.Title,
+            Desc = options.Desc,
+            Callback = options.Callback or function() end
+        })
+    end
+    
+    -- Shortcut for Dropdown
+    function shortcuts:Dropdown(options)
+        local dropdown = tab:Dropdown({
+            Title = options.Title,
+            List = options.List or {},
+            Value = options.Value or options.List[1] or "N/A",
+            Multi = options.Multi or false,
+            Callback = options.Callback or function() end
+        })
+        
+        if options.Flag then
+            RegisterLiquidOption(dropdown, "Dropdown", options.Flag, function(value)
+                if options.Callback then
+                    options.Callback(value)
+                end
+            end)
+            
+            task.spawn(function()
+                local data = LoadConfigData()
+                if data and data[options.Flag] ~= nil then
+                    dropdown:SetValue(data[options.Flag])
+                end
+            end)
+        end
+        
+        return dropdown
+    end
+    
+    -- Shortcut for Input (Keybind)
+    function shortcuts:Keybind(options)
+        local input = tab:Input({
+            Title = options.Title,
+            Desc = options.Desc,
+            Key = options.Key or Enum.KeyCode.RightControl,
+            Value = options.Value or false,
+            Callback = options.Callback or function() end
+        })
+        
+        if options.Flag then
+            RegisterLiquidOption(input, "Input", options.Flag, function(key, value)
+                if options.Callback then
+                    options.Callback(input, key, value)
+                end
+            end)
+            
+            task.spawn(function()
+                local data = LoadConfigData()
+                if data and data[options.Flag] ~= nil then
+                    input:SetValue(Enum.KeyCode[data[options.Flag]])
+                end
+            end)
+        end
+        
+        return input
+    end
+    
+    return shortcuts
+end
+
+-- Helper function to load config data
+function LoadConfigData()
+    if isfile("config.json") then
+        return game:GetService("HttpService"):JSONDecode(readfile("config.json"))
+    end
+    return nil
+end
