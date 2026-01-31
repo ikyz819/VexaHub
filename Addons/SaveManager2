@@ -1,0 +1,57 @@
+-- Load both libraries
+local Liquid = require(game:GetService("ReplicatedStorage"):WaitForChild("Liquid"))
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/refs/heads/master/Addons/SaveManager.lua"))()
+
+-- Modify SaveManager to work with Liquid UI
+SaveManager.Parser = {
+    Toggle = {
+        Save = function(idx, object) 
+            return { type = "Toggle", idx = idx, value = object.Value } 
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(data.value)
+            end
+        end,
+    },
+    Slider = {
+        Save = function(idx, object)
+            return { type = "Slider", idx = idx, value = tostring(object.Value) }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(tonumber(data.value))
+            end
+        end,
+    },
+    Textbox = {  -- For Liquid's Textbox
+        Save = function(idx, object)
+            return { type = "Textbox", idx = idx, text = object.Value }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] and type(data.text) == "string" then
+                SaveManager.Options[idx]:SetValue(data.text)
+            end
+        end,
+    },
+    Dropdown = {
+        Save = function(idx, object)
+            return { type = "Dropdown", idx = idx, value = object.Value }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(data.value)
+            end
+        end,
+    },
+    Input = {  -- For Liquid's Input (Keybind)
+        Save = function(idx, object)
+            return { type = "Input", idx = idx, key = tostring(object.Value) }
+        end,
+        Load = function(idx, data)
+            if SaveManager.Options[idx] then 
+                SaveManager.Options[idx]:SetValue(Enum.KeyCode[data.key])
+            end
+        end,
+    },
+}
